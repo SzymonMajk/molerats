@@ -44,7 +44,7 @@ _thread.start_new_thread(communicate,(addr, message))
 
 while True:
     raw_input = input("To server s to start, other options w a s d r 1 2 3 << ")
-	
+
     if raw_input == "start":
         message.content = "start"
     elif raw_input == "w":

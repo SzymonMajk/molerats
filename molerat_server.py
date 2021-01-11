@@ -2,31 +2,34 @@ import socket
 import _thread
 import time
 import sys
+import random
 
 
 initial_reserves = 20
+board_size = 10
+food_probability = 0.05
 service_address = ('', 65420)
 
 class NoopCommand:
-    def execute(self, player, game):
+    def execute(self, player, board):
         pass
 
 class MoveCommand:
     def __init__(self, direction):
         self.direction = direction
 
-    def execute(self, player, game):
+    def execute(self, player, board):
         print(player.nick + " move " + self.direction) #TODO changes due to command execution
 
 class SoundCommand:
     def __init__(self, sound):
         self.sound = sound
 
-    def execute(self, player, game):
+    def execute(self, player, board):
         print(player.nick + " sound " + self.sound) #TODO changes due to command execution
 
 class CollectCommand:
-    def execute(self, player, game):
+    def execute(self, player, board):
         print(player.nick + " collect food!") #TODO changes due to command execution
 
 class Player:
@@ -41,14 +44,43 @@ class Player:
         self.x = self.x + x_vector
         self.y = self.y + y_vector
 
-    def execute_command(self, game):
-        self.current_command.execute(self, game)
+    def execute_command(self, board):
+        self.current_command.execute(self, board)
 
-class Game: #TODO game board generation and API for commands
+class Floor:
+    pass
+
+class Food:
+    pass
+
+class Wall:
+    pass
+
+class GameBoard:
+    def __init__(self, size, probability):
+        self.size = size
+        self.food_probability = probability
+        self.fields = {}
+        self.generate_board()
+
+    def generate_board(self):
+        for row in range(0, self.size):
+            self.fields[row] = {} 
+            for col in range(0, self.size):
+                self.fields[row][col] = Floor() #TODO add Wall generation
+
+    def generate_food(self):
+        for row in range(0, self.size):
+            for col in range(0, self.size):
+                if random.random() <= self.probability:
+                    self.fields[row][col] = Food()
+
+class Game:
     def __init__(self):
         self.reset()
 
     def reset(self):
+        self.board = GameBoard(board_size, food_probability)
         self.running = False
         self.round = 0
         self.score = 0
@@ -73,15 +105,15 @@ class Game: #TODO game board generation and API for commands
     def update_game(self):
         if self.reserves > 0:
             for player in self.players.values():
-                player.execute_command(self)
+                player.execute_command(self.board)
             self.round = self.round + 1
             self.reserves = self.reserves - 1
         else:
             self.running = False
             self.score = "Game finished, score = " + str(self.round)
 
-    def render_for_player(self, addr):
-        render = "Position: (" + str(self.players[addr].x_position) + "),(" + str(self.players[addr].y_position) + ")"
+    def render_for_player(self, addr): #TODO consolidate with GameBoard, probably by json
+        render = "Position: (" + str(self.players[addr].x_position) + "),(" + str(self.players[addr].y_position) + ")" 
         render = render + " " + str(self.reserves) + " reserves left! "
         return render
 
