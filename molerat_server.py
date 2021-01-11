@@ -7,15 +7,31 @@ import sys
 initial_reserves = 20
 service_address = ('', 65420)
 
-class Command:
-    def __init__(self):
+class NoopCommand:
+    def execute(self, player, game):
         pass
 
-class NoopCommand:
-    pass
+class MoveCommand:
+    def __init__(self, direction):
+        self.direction = direction
+
+    def execute(self, player, game):
+        print(player.nick + " move " + self.direction) #TODO changes due to command execution
+
+class SoundCommand:
+    def __init__(self, sound):
+        self.sound = sound
+
+    def execute(self, player, game):
+        print(player.nick + " sound " + self.sound) #TODO changes due to command execution
+
+class CollectCommand:
+    def execute(self, player, game):
+        print(player.nick + " collect food!") #TODO changes due to command execution
 
 class Player:
-    def __init__(self, nick):
+    def __init__(self, addr, nick):
+        self.addr = addr
         self.x_position = 0
         self.y_position = 0
         self.nick = nick
@@ -26,10 +42,9 @@ class Player:
         self.y = self.y + y_vector
 
     def execute_command(self, game):
-        print("Here happens changes due to the last " + str(self.nick) + " command")
-        self.current_command = NoopCommand()
+        self.current_command.execute(self, game)
 
-class Game: #TODO game board generation and events handling and conditions
+class Game: #TODO game board generation and API for commands
     def __init__(self):
         self.reset()
 
@@ -73,10 +88,30 @@ class Game: #TODO game board generation and events handling and conditions
     def finished(self):
         return not self.running and self.reserves <= 0 and not self.players
 
+def parse_input(raw_input):
+    if raw_input == "north":
+        return MoveCommand("north")
+    elif raw_input == "east":
+        return MoveCommand("east")
+    elif raw_input == "south":
+        return MoveCommand("south")
+    elif raw_input == "west":
+        return MoveCommand("west")
+    elif raw_input == "collect":
+        return CollectCommand()
+    elif raw_input == "snarl":
+        return SoundCommand("snarl")
+    elif raw_input == "scrape":
+        return SoundCommand("scrape")
+    elif raw_input == "squeak":
+        return SoundCommand("squeak")
+    else:
+        return NoopCommand()
+
 def handle_client(conn, addr, game):
     with conn as client_socket:
         nick = client_socket.recv(1024).decode()
-        player = Player(nick)
+        player = Player(addr, nick)
         game.add_player(addr, player)
         client_socket.send(nick.encode())
 
@@ -101,8 +136,7 @@ def handle_client(conn, addr, game):
         while True:
             try:
                 if game.running:
-                    msg = client_socket.recv(1024) # TODO command parsing
-                    player.command = Command()
+                    player.current_command = parse_input(client_socket.recv(1024).decode())
                     rendered_game = game.render_for_player(addr)
                     client_socket.send(rendered_game.encode())
                 else:

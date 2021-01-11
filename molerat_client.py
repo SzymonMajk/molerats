@@ -43,9 +43,25 @@ message.content = input("I am ")
 _thread.start_new_thread(communicate,(addr, message))
 
 while True:
-    raw_input = input("To server s to start, wasd r and 1 2 3 possible << ")
+    raw_input = input("To server s to start, other options w a s d r 1 2 3 << ")
 	
-    if raw_input == "s":
+    if raw_input == "start":
         message.content = "start"
+    elif raw_input == "w":
+        message.content = "north"
+    elif raw_input == "a":
+        message.content = "east"
+    elif raw_input == "s":
+        message.content = "south"
+    elif raw_input == "d":
+        message.content = "west"
+    elif raw_input == "r":
+        message.content = "collect"
+    elif raw_input == "1":
+        message.content = "snarl"
+    elif raw_input == "2":
+        message.content = "scrape"
+    elif raw_input == "3":
+        message.content = "squeak"
     else:
         time.sleep(0.5)
