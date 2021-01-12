@@ -19,7 +19,20 @@ class MoveCommand:
         self.direction = direction
 
     def execute(self, player, board):
-        print(player.nick + " move " + self.direction) #TODO changes due to command execution
+        new_x_position = player.x_position
+        new_y_position = player.y_position
+
+        if self.direction == "north":
+            new_y_position = new_y_position + 1
+        elif  self.direction == "east":
+            new_x_position = new_x_position - 1
+        elif  self.direction == "west":
+            new_x_position = new_x_position + 1
+        elif self.direction == "south":
+            new_y_position = new_y_position - 1
+
+        if board.can_move(new_x_position, new_y_position):
+            player.move(new_x_position, new_y_position)
 
 class SoundCommand:
     def __init__(self, sound):
@@ -35,14 +48,14 @@ class CollectCommand:
 class Player:
     def __init__(self, addr, nick):
         self.addr = addr
-        self.x_position = 0
-        self.y_position = 0
+        self.x_position = board_size / 2
+        self.y_position = board_size / 2
         self.nick = nick
         self.current_command = NoopCommand()
 
-    def move(self, x_vector, y_vector):
-        self.x = self.x + x_vector
-        self.y = self.y + y_vector
+    def move(self, new_x_position, new_y_position):
+        self.x_position = new_x_position
+        self.y_position = new_y_position
 
     def execute_command(self, board):
         self.current_command.execute(self, board)
@@ -74,6 +87,11 @@ class GameBoard:
             for col in range(0, self.size):
                 if random.random() <= self.probability:
                     self.fields[row][col] = Food()
+
+    def can_move(self, x_position, y_position):
+        if x_position in self.fields.keys():
+            if y_position in self.fields[x_position].keys():
+                return not isinstance(self.fields[x_position][y_position], Wall)
 
 class Game:
     def __init__(self):

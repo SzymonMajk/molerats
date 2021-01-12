@@ -3,7 +3,7 @@
 
 python molerat_server.py 
 
-# Each client in separate cmd can start with:
+# Each client starts with:
 
 python molerat_client.py
 
