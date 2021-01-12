@@ -3,35 +3,38 @@ import _thread
 import time
 
 
-class Message:
+class GameCondition:
     def __init__(self):
-        self.content = "NOOP"
+        self.finished = False
+        self.message = "NOOP"
 
     def reset(self):
-        self.content = "NOOP"
+        self.message = "NOOP"
 
-def communicate(addr, message):
+
+def communicate(addr, game_condition):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect(addr)
 	
-        s.sendall(message.content.encode())
+        s.sendall(game_condition.message.encode())
         data = s.recv(1024)
         print(repr(data))
 	
         while True:
             try:
-                s.sendall(message.content.encode())
+                s.sendall(game_condition.message.encode())
                 data = s.recv(1024)
-                message.reset()
+                game_condition.reset()
                 print('Received: ', repr(data.decode()))
                 time.sleep(4)
             except (ConnectionResetError, ConnectionAbortedError):
+                game_condition.finished = True
                 break
 
 print("Welcome in molerats!")
 
 addr = ('localhost', 65420)
-message = Message()
+game_condition = GameCondition()
 
 print("We will try to connect to server at host ", addr[0], " on port ", addr[1])
 print("First send your nick, ,,start'' will finish the lobby and start the game on server")
@@ -39,29 +42,32 @@ print("After each iteration you will be informed about game status")
 print("Move using wasd keys, 1,2 and 3 will allow you to make noise, use r to pick a food")
 print("Remember! It is easy to get lost in molerats tunnels...")
 
-message.content = input("I am ")
-_thread.start_new_thread(communicate,(addr, message))
+game_condition.message = input("I am ")
+_thread.start_new_thread(communicate,(addr, game_condition))
 
 while True:
-    raw_input = input("To server s to start, other options w a s d r 1 2 3 << ")
+    if game_condition.finished:
+        break
+
+    raw_input = input("To server start to start, other options w a s d r 1 2 3 << ")
 
     if raw_input == "start":
-        message.content = "start"
+        game_condition.message = "start"
     elif raw_input == "w":
-        message.content = "north"
+        game_condition.message = "north"
     elif raw_input == "a":
-        message.content = "east"
+        game_condition.message = "east"
     elif raw_input == "s":
-        message.content = "south"
+        game_condition.message = "south"
     elif raw_input == "d":
-        message.content = "west"
+        game_condition.message = "west"
     elif raw_input == "r":
-        message.content = "collect"
+        game_condition.message = "collect"
     elif raw_input == "1":
-        message.content = "snarl"
+        game_condition.message = "snarl"
     elif raw_input == "2":
-        message.content = "scrape"
+        game_condition.message = "scrape"
     elif raw_input == "3":
-        message.content = "squeak"
+        game_condition.message = "squeak"
     else:
         time.sleep(0.5)
