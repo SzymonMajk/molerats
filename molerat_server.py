@@ -43,13 +43,18 @@ class SoundCommand:
 
 class CollectCommand:
     def execute(self, player, board):
-        print(player.nick + " collect food!") #TODO changes due to command execution
+        if player.inventory_reserves <= 0:
+            player.inventory_reserves = board.collect_food(player.x_position, player.y_position)
+        elif board.inside_queen_chamber(player.x_position, player.y_position):
+            board.left_reserves(player.inventory_reserves)
+            player.inventory_reserves = 0
 
 class Player:
     def __init__(self, addr, nick):
         self.addr = addr
         self.x_position = board_size / 2
         self.y_position = board_size / 2
+        self.inventory_reserves = 0
         self.nick = nick
         self.current_command = NoopCommand()
 
@@ -68,7 +73,10 @@ class Sound:
         self.y_position = y_position
 
 class Food:
-    pass
+    def __init__(self, value, x_position, y_position):
+        self.value = value
+        self.x_position = x_position
+        self.y_position = y_position
 
 class Floor:
     pass
@@ -79,10 +87,11 @@ class Wall:
 class GameBoard:
     def __init__(self, size, probability):
         self.size = size
-        self.food_probability = probability
+        self.probability = probability
         self.fields = {}
         self.foods = []
         self.sounds = []
+        self.collected_food = 0
         self.generate_board()
 
     def generate_board(self):
@@ -94,14 +103,13 @@ class GameBoard:
     def generate_food(self):
         for row in range(0, self.size):
             for col in range(0, self.size):
-                if random.random() <= self.probability:
-                    self.fields[row][col] = Food() # TODO replace by adding to foods
+                random_value = random.random()
+                if random_value <= self.probability and not self.inside_queen_chamber(row, col):
+                    self.foods.append(Food(int((1 - random_value) * 50), row, col))
 
     def update_sounds(self):
         for sound in list(self.sounds):
             sound.time_to_live = sound.time_to_live - 1
-
-            print("Sound! " + str(sound.type))
             
             if sound.time_to_live <= 0:
                 self.sounds.remove(sound)
@@ -113,6 +121,26 @@ class GameBoard:
 
     def add_sound(self, type, x_position, y_position):
         self.sounds.append(Sound(type, x_position, y_position))
+
+    def collect_food(self, x_position, y_position):
+        for food in list(self.foods):
+            if food.x_position == x_position and food.y_position == y_position:
+                value = food.value
+                print("Collected! " + str(value))
+                self.foods.remove(food)
+                return value
+        return 0
+
+    def inside_queen_chamber(self, x_position, y_position):
+        return abs(self.size / 2 - x_position) <= 2 and abs(self.size / 2 - y_position) <= 2
+
+    def left_reserves(self, food):
+        self.collected_food = food
+
+    def use_reserves(self):
+        used_reserves = self.collected_food
+        self.collected_food = 0
+        return used_reserves
 
 class Game:
     def __init__(self):
@@ -143,9 +171,11 @@ class Game:
 
     def update_game(self):
         if self.reserves > 0:
+            self.board.generate_food()
             self.board.update_sounds()
             for player in self.players.values():
                 player.execute_command(self.board)
+            self.reserves = self.reserves + self.board.use_reserves()
             self.round = self.round + 1
             self.reserves = self.reserves - 1
         else:
