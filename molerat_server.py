@@ -33,6 +33,7 @@ class MoveCommand:
 
         if board.can_move(new_x_position, new_y_position):
             player.move(new_x_position, new_y_position)
+            board.left_pheromones(player.nick, player.x_position, player.y_position)
 
 class SoundCommand:
     def __init__(self, sound):
@@ -65,6 +66,13 @@ class Player:
     def execute_command(self, board):
         self.current_command.execute(self, board)
 
+class Pheromone:
+    def __init__(self, nick, x_position, y_position):
+        self.nick = nick
+        self.time_to_live = 10
+        self.x_position = x_position
+        self.y_position = y_position
+
 class Sound:
     def __init__(self, type, x_position, y_position):
         self.type = type
@@ -91,6 +99,7 @@ class GameBoard:
         self.fields = {}
         self.foods = []
         self.sounds = []
+        self.pheromones = []
         self.collected_food = 0
         self.generate_board()
 
@@ -114,6 +123,14 @@ class GameBoard:
             if sound.time_to_live <= 0:
                 self.sounds.remove(sound)
 
+    def update_pheromones(self):
+        for pheromone in list(self.pheromones):
+            pheromone.time_to_live = pheromone.time_to_live - 1
+            
+            if pheromone.time_to_live <= 0:
+                self.sounds.remove(pheromone)
+
+
     def can_move(self, x_position, y_position):
         if x_position in self.fields.keys():
             if y_position in self.fields[x_position].keys():
@@ -121,6 +138,9 @@ class GameBoard:
 
     def add_sound(self, type, x_position, y_position):
         self.sounds.append(Sound(type, x_position, y_position))
+
+    def left_pheromones(self, nick, x_position, y_position):
+        self.pheromones.append(Pheromone(nick, x_position, y_position))
 
     def collect_food(self, x_position, y_position):
         for food in list(self.foods):
@@ -173,6 +193,7 @@ class Game:
         if self.reserves > 0:
             self.board.generate_food()
             self.board.update_sounds()
+            self.board.update_pheromones()
             for player in self.players.values():
                 player.execute_command(self.board)
             self.reserves = self.reserves + self.board.use_reserves()
