@@ -39,7 +39,7 @@ class SoundCommand:
         self.sound = sound
 
     def execute(self, player, board):
-        print(player.nick + " sound " + self.sound) #TODO changes due to command execution
+        board.add_sound(self.sound, player.x_position, player.y_position)
 
 class CollectCommand:
     def execute(self, player, board):
@@ -60,10 +60,17 @@ class Player:
     def execute_command(self, board):
         self.current_command.execute(self, board)
 
-class Floor:
-    pass
+class Sound:
+    def __init__(self, type, x_position, y_position):
+        self.type = type
+        self.time_to_live = 3
+        self.x_position = x_position
+        self.y_position = y_position
 
 class Food:
+    pass
+
+class Floor:
     pass
 
 class Wall:
@@ -74,6 +81,8 @@ class GameBoard:
         self.size = size
         self.food_probability = probability
         self.fields = {}
+        self.foods = []
+        self.sounds = []
         self.generate_board()
 
     def generate_board(self):
@@ -86,12 +95,24 @@ class GameBoard:
         for row in range(0, self.size):
             for col in range(0, self.size):
                 if random.random() <= self.probability:
-                    self.fields[row][col] = Food()
+                    self.fields[row][col] = Food() # TODO replace by adding to foods
+
+    def update_sounds(self):
+        for sound in list(self.sounds):
+            sound.time_to_live = sound.time_to_live - 1
+
+            print("Sound! " + str(sound.type))
+            
+            if sound.time_to_live <= 0:
+                self.sounds.remove(sound)
 
     def can_move(self, x_position, y_position):
         if x_position in self.fields.keys():
             if y_position in self.fields[x_position].keys():
                 return not isinstance(self.fields[x_position][y_position], Wall)
+
+    def add_sound(self, type, x_position, y_position):
+        self.sounds.append(Sound(type, x_position, y_position))
 
 class Game:
     def __init__(self):
@@ -122,6 +143,7 @@ class Game:
 
     def update_game(self):
         if self.reserves > 0:
+            self.board.update_sounds()
             for player in self.players.values():
                 player.execute_command(self.board)
             self.round = self.round + 1
