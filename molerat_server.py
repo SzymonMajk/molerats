@@ -122,7 +122,7 @@ class GameBoard:
         x_dig = self.size / 2
         y_dig = self.size / 2
 
-        for j in range(0, 2):
+        for j in range(0, 1):
             for i in range(0, self.size):
                 random_value = random.random()
                 if random_value < 0.25 and y_dig < self.size - 1:
@@ -137,7 +137,7 @@ class GameBoard:
         x_dig = self.size / 2
         y_dig = self.size / 2
 
-        for j in range(0, 2):
+        for j in range(0, 1):
             for i in range(0, self.size):
                 random_value = random.random()
                 if random_value < 0.25 and y_dig < self.size - 1:
@@ -152,7 +152,7 @@ class GameBoard:
         x_dig = self.size / 2
         y_dig = self.size / 2
 
-        for j in range(0, 2):
+        for j in range(0, 1):
             for i in range(0, self.size):
                 random_value = random.random()
                 if random_value < 0.25 and x_dig < self.size - 1:
@@ -167,7 +167,7 @@ class GameBoard:
         x_dig = self.size / 2
         y_dig = self.size / 2
 
-        for j in range(0, 2):
+        for j in range(0, 1):
             for i in range(0, self.size):
                 random_value = random.random()
                 if random_value < 0.25 and x_dig < self.size - 1:

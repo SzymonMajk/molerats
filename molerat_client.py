@@ -3,7 +3,6 @@ import _thread
 import time
 import json
 
-
 class GameCondition:
     def __init__(self):
         self.finished = False
