@@ -1,31 +1,43 @@
 import socket
 import _thread
 import time
+import json
 
 
 class GameCondition:
     def __init__(self):
         self.finished = False
-        self.message = "NOOP"
+        self.message = "noop"
 
     def reset(self):
-        self.message = "NOOP"
+        self.message = "noop"
 
+def recvall(socket):
+    BUFF_SIZE = 1024
+    data = b''
+    while True:
+        part = socket.recv(BUFF_SIZE)
+        data += part
+        if len(part) < BUFF_SIZE:
+            break
+    return data
 
 def communicate(addr, game_condition):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect(addr)
 	
         s.sendall(game_condition.message.encode())
-        data = s.recv(1024)
+        data = recvall(s).decode("utf-8")
         print(repr(data))
 	
         while True:
             try:
                 s.sendall(game_condition.message.encode())
-                data = s.recv(1024)
-                game_condition.reset()
-                print('Received: ', repr(data.decode()))
+                data = recvall(s).decode("utf-8")
+                try:
+                    print(json.loads(data))
+                except json.decoder.JSONDecodeError as e:
+                    print(e)
                 time.sleep(4)
             except (ConnectionResetError, ConnectionAbortedError):
                 game_condition.finished = True

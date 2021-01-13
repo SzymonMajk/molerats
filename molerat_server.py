@@ -3,11 +3,15 @@ import _thread
 import time
 import sys
 import random
+import json
 
 
 initial_reserves = 20
 board_size = 10
-food_probability = 0.05
+vision_render = 3
+audition_render = 8
+smell_render = 15
+food_probability = 0.01
 service_address = ('', 65420)
 
 class NoopCommand:
@@ -73,6 +77,9 @@ class Pheromone:
         self.x_position = x_position
         self.y_position = y_position
 
+    def list_serialize(self):
+        return [self.nick, self.x_position, self.y_position]
+
 class Sound:
     def __init__(self, type, x_position, y_position):
         self.type = type
@@ -80,17 +87,17 @@ class Sound:
         self.x_position = x_position
         self.y_position = y_position
 
+    def list_serialize(self):
+        return [self.type, self.x_position, self.y_position]
+
 class Food:
     def __init__(self, value, x_position, y_position):
         self.value = value
         self.x_position = x_position
         self.y_position = y_position
 
-class Floor:
-    pass
-
-class Wall:
-    pass
+    def list_serialize(self):
+        return [self.value, self.x_position, self.y_position]
 
 class GameBoard:
     def __init__(self, size, probability):
@@ -107,7 +114,7 @@ class GameBoard:
         for row in range(0, self.size):
             self.fields[row] = {} 
             for col in range(0, self.size):
-                self.fields[row][col] = Floor() #TODO add Wall generation
+                self.fields[row][col] = 'F' #TODO add Wall generation with W
 
     def generate_food(self):
         for row in range(0, self.size):
@@ -128,13 +135,13 @@ class GameBoard:
             pheromone.time_to_live = pheromone.time_to_live - 1
             
             if pheromone.time_to_live <= 0:
-                self.sounds.remove(pheromone)
+                self.pheromones.remove(pheromone)
 
 
     def can_move(self, x_position, y_position):
         if x_position in self.fields.keys():
             if y_position in self.fields[x_position].keys():
-                return not isinstance(self.fields[x_position][y_position], Wall)
+                return self.fields[x_position][y_position] == 'F'
 
     def add_sound(self, type, x_position, y_position):
         self.sounds.append(Sound(type, x_position, y_position))
@@ -152,7 +159,7 @@ class GameBoard:
         return 0
 
     def inside_queen_chamber(self, x_position, y_position):
-        return abs(self.size / 2 - x_position) <= 2 and abs(self.size / 2 - y_position) <= 2
+        return abs((self.size / 2) - x_position) <= 2 and abs((self.size / 2) - y_position) <= 2
 
     def left_reserves(self, food):
         self.collected_food = food
@@ -161,6 +168,43 @@ class GameBoard:
         used_reserves = self.collected_food
         self.collected_food = 0
         return used_reserves
+
+    def fields_map_to_list_around(self, x_position, y_position):
+        result = []
+		
+        for row in self.fields.keys():
+            for col in self.fields[row]:
+                if abs(row - x_position) <= vision_render and abs(col - y_position) <= vision_render:
+                    result.append([row, col, self.fields[row][col]])
+
+        return result
+
+    def foods_to_list_around(self, x_position, y_position):
+        result = []
+		
+        for food in self.foods:
+            if abs(food.x_position - x_position) <= audition_render and abs(food.y_position - y_position) <= smell_render:
+                result.append([food.x_position, food.y_position, food.value])
+
+        return result
+
+    def sounds_to_list_around(self, x_position, y_position):
+        result = []
+		
+        for sound in self.sounds:
+            if abs(sound.x_position - x_position) <= audition_render and abs(sound.y_position - y_position) <= audition_render:
+                result.append([sound.x_position, sound.y_position, sound.type])
+
+        return result
+
+    def pheromones_to_list_around(self, x_position, y_position):
+        result = []
+		
+        for pheromone in self.pheromones:
+            if abs(pheromone.x_position - x_position) <= audition_render and abs(pheromone.y_position - y_position) <= smell_render:
+                result.append([pheromone.x_position, pheromone.y_position, pheromone.nick])
+
+        return result
 
 class Game:
     def __init__(self):
@@ -196,6 +240,7 @@ class Game:
             self.board.update_pheromones()
             for player in self.players.values():
                 player.execute_command(self.board)
+                player.current_command = NoopCommand()
             self.reserves = self.reserves + self.board.use_reserves()
             self.round = self.round + 1
             self.reserves = self.reserves - 1
@@ -203,10 +248,21 @@ class Game:
             self.running = False
             self.score = "Game finished, score = " + str(self.round)
 
-    def render_for_player(self, addr): #TODO consolidate with GameBoard, probably by json
-        render = "Position: (" + str(self.players[addr].x_position) + "),(" + str(self.players[addr].y_position) + ")" 
-        render = render + " " + str(self.reserves) + " reserves left! "
-        return render
+
+
+    def render_for_player(self, addr):
+        x_position = self.players[addr].x_position
+        y_position = self.players[addr].y_position
+        rendered = dict()
+        rendered["fields"] = self.board.fields_map_to_list_around(x_position, y_position)
+        rendered["foods"] = self.board.foods_to_list_around(x_position, y_position)
+        rendered["sounds"] = self.board.sounds_to_list_around(x_position, y_position)
+        rendered["pheromones"] = self.board.pheromones_to_list_around(x_position, y_position)
+        rendered["x_position"] = x_position
+        rendered["y_position"] = y_position
+        if self.board.inside_queen_chamber(x_position, y_position):
+            rendered["queen_chamber"] = True
+        return json.dumps(rendered)
 
     def finished(self):
         return not self.running and self.reserves <= 0 and not self.players
@@ -261,10 +317,10 @@ def handle_client(conn, addr, game):
                 if game.running:
                     player.current_command = parse_input(client_socket.recv(1024).decode())
                     rendered_game = game.render_for_player(addr)
-                    client_socket.send(rendered_game.encode())
+                    client_socket.sendall(bytes(rendered_game,encoding="utf-8"))
                 else:
                     client_socket.recv(1024)
-                    client_socket.send(game.score.encode())
+                    client_socket.sendall(bytes(game.score,encoding="utf-8"))
                     break
             except (ConnectionResetError, ConnectionAbortedError):
                 game.remove_player(addr)
