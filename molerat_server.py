@@ -7,7 +7,7 @@ import json
 
 
 initial_reserves = 20
-board_size = 10
+board_size = 100
 vision_render = 3
 audition_render = 8
 smell_render = 15
@@ -114,7 +114,70 @@ class GameBoard:
         for row in range(0, self.size):
             self.fields[row] = {} 
             for col in range(0, self.size):
-                self.fields[row][col] = 'F' #TODO add Wall generation with W
+                if (self.inside_queen_chamber(row, col)):
+                    self.fields[row][col] = 'F'
+                else:
+                    self.fields[row][col] = 'W'
+        
+        x_dig = self.size / 2
+        y_dig = self.size / 2
+
+        for j in range(0, 2):
+            for i in range(0, self.size):
+                random_value = random.random()
+                if random_value < 0.25 and y_dig < self.size - 1:
+                    y_dig = y_dig + 1
+                elif random_value >= 0.25 and random_value <= 0.75 and x_dig < self.size - 1:
+                    x_dig = x_dig + 1
+                elif random_value > 0.75 and y_dig > 0:
+                    y_dig = y_dig - 1
+
+            self.fields[x_dig][y_dig] = 'F'
+
+        x_dig = self.size / 2
+        y_dig = self.size / 2
+
+        for j in range(0, 2):
+            for i in range(0, self.size):
+                random_value = random.random()
+                if random_value < 0.25 and y_dig < self.size - 1:
+                    y_dig = y_dig + 1
+                elif random_value >= 0.25 and random_value <= 0.75 and x_dig > 0:
+                    x_dig = x_dig - 1
+                elif random_value > 0.75 and y_dig > 0:
+                    y_dig = y_dig - 1
+
+            self.fields[x_dig][y_dig] = 'F'
+
+        x_dig = self.size / 2
+        y_dig = self.size / 2
+
+        for j in range(0, 2):
+            for i in range(0, self.size):
+                random_value = random.random()
+                if random_value < 0.25 and x_dig < self.size - 1:
+                    x_dig = x_dig + 1
+                elif random_value >= 0.25 and random_value <= 0.75 and y_dig < self.size - 1:
+                    y_dig = y_dig + 1
+                elif random_value > 0.75 and x_dig > 0:
+                    x_dig = x_dig - 1
+
+            self.fields[x_dig][y_dig] = 'F'
+
+        x_dig = self.size / 2
+        y_dig = self.size / 2
+
+        for j in range(0, 2):
+            for i in range(0, self.size):
+                random_value = random.random()
+                if random_value < 0.25 and x_dig < self.size - 1:
+                    x_dig = x_dig + 1
+                elif random_value >= 0.25 and random_value <= 0.75 and y_dig > 0:
+                    y_dig = y_dig - 1
+                elif random_value > 0.75 and x_dig > 0:
+                    x_dig = x_dig - 1
+
+            self.fields[x_dig][y_dig] = 'F'
 
     def generate_food(self):
         for row in range(0, self.size):
@@ -175,7 +238,7 @@ class GameBoard:
         for row in self.fields.keys():
             for col in self.fields[row]:
                 if abs(row - x_position) <= vision_render and abs(col - y_position) <= vision_render:
-                    result.append([row, col, self.fields[row][col]])
+                    result.append([row - x_position, col - y_position, self.fields[row][col]])
 
         return result
 
@@ -184,7 +247,7 @@ class GameBoard:
 		
         for food in self.foods:
             if abs(food.x_position - x_position) <= audition_render and abs(food.y_position - y_position) <= smell_render:
-                result.append([food.x_position, food.y_position, food.value])
+                result.append([food.x_position - x_position, food.y_position - y_position, food.value])
 
         return result
 
@@ -193,7 +256,7 @@ class GameBoard:
 		
         for sound in self.sounds:
             if abs(sound.x_position - x_position) <= audition_render and abs(sound.y_position - y_position) <= audition_render:
-                result.append([sound.x_position, sound.y_position, sound.type])
+                result.append([sound.x_position - x_position, sound.y_position - y_position, sound.type])
 
         return result
 
@@ -202,7 +265,7 @@ class GameBoard:
 		
         for pheromone in self.pheromones:
             if abs(pheromone.x_position - x_position) <= audition_render and abs(pheromone.y_position - y_position) <= smell_render:
-                result.append([pheromone.x_position, pheromone.y_position, pheromone.nick])
+                result.append([pheromone.x_position - x_position, pheromone.y_position - y_position, pheromone.nick])
 
         return result
 

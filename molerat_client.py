@@ -37,7 +37,7 @@ def communicate(addr, game_condition):
                 try:
                     print(json.loads(data))
                 except json.decoder.JSONDecodeError as e:
-                    print(e)
+                    print(data)
                 time.sleep(4)
             except (ConnectionResetError, ConnectionAbortedError):
                 game_condition.finished = True
