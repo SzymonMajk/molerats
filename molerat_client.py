@@ -37,7 +37,7 @@ def communicate(addr, game_condition):
                     print(json.loads(data))
                 except json.decoder.JSONDecodeError as e:
                     print(data)
-                time.sleep(4)
+                time.sleep(1)
             except (ConnectionResetError, ConnectionAbortedError):
                 game_condition.finished = True
                 break
@@ -81,4 +81,4 @@ while True:
     elif raw_input == "3":
         game_condition.message = "squeak"
     else:
-        time.sleep(0.5)
+        time.sleep(0.1)

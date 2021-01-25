@@ -6,12 +6,12 @@ import random
 import json
 
 
-initial_reserves = 20
+initial_reserves = 50
 board_size = 100
 vision_render = 3
 audition_render = 8
 smell_render = 15
-food_probability = 0.01
+food_probability = 0.002
 service_address = ('', 65420)
 
 class NoopCommand:
@@ -122,60 +122,57 @@ class GameBoard:
         x_dig = self.size / 2
         y_dig = self.size / 2
 
-        for j in range(0, 1):
-            for i in range(0, self.size):
-                random_value = random.random()
-                if random_value < 0.25 and y_dig < self.size - 1:
-                    y_dig = y_dig + 1
-                elif random_value >= 0.25 and random_value <= 0.75 and x_dig < self.size - 1:
-                    x_dig = x_dig + 1
-                elif random_value > 0.75 and y_dig > 0:
-                    y_dig = y_dig - 1
+        for i in range(0, self.size):
+            random_value = random.random()
+            if random_value < 0.25 and y_dig < self.size - 1:
+                y_dig = y_dig + 1
+            elif random_value >= 0.25 and random_value <= 0.75 and x_dig < self.size - 1:
+                x_dig = x_dig + 1
+            elif random_value > 0.75 and y_dig > 0:
+                y_dig = y_dig - 1
 
             self.fields[x_dig][y_dig] = 'F'
 
         x_dig = self.size / 2
         y_dig = self.size / 2
 
-        for j in range(0, 1):
-            for i in range(0, self.size):
-                random_value = random.random()
-                if random_value < 0.25 and y_dig < self.size - 1:
-                    y_dig = y_dig + 1
-                elif random_value >= 0.25 and random_value <= 0.75 and x_dig > 0:
-                    x_dig = x_dig - 1
-                elif random_value > 0.75 and y_dig > 0:
-                    y_dig = y_dig - 1
+        for i in range(0, self.size):
+            random_value = random.random()
+            if random_value < 0.25 and y_dig < self.size - 1:
+                y_dig = y_dig + 1
+            elif random_value >= 0.25 and random_value <= 0.75 and x_dig > 0:
+                x_dig = x_dig - 1
+            elif random_value > 0.75 and y_dig > 0:
+                y_dig = y_dig - 1
 
             self.fields[x_dig][y_dig] = 'F'
 
         x_dig = self.size / 2
         y_dig = self.size / 2
 
-        for j in range(0, 1):
-            for i in range(0, self.size):
-                random_value = random.random()
-                if random_value < 0.25 and x_dig < self.size - 1:
-                    x_dig = x_dig + 1
-                elif random_value >= 0.25 and random_value <= 0.75 and y_dig < self.size - 1:
-                    y_dig = y_dig + 1
-                elif random_value > 0.75 and x_dig > 0:
-                    x_dig = x_dig - 1
+        for i in range(0, self.size):
+            random_value = random.random()
+            if random_value < 0.25 and x_dig < self.size - 1:
+                x_dig = x_dig + 1
+            elif random_value >= 0.25 and random_value <= 0.75 and y_dig < self.size - 1:
+                y_dig = y_dig + 1
+            elif random_value > 0.75 and x_dig > 0:
+                x_dig = x_dig - 1
 
             self.fields[x_dig][y_dig] = 'F'
 
         x_dig = self.size / 2
         y_dig = self.size / 2
 
-        for j in range(0, 1):
-            for i in range(0, self.size):
-                random_value = random.random()
-                if random_value < 0.25 and x_dig < self.size - 1:
-                    x_dig = x_dig + 1
-                elif random_value >= 0.25 and random_value <= 0.75 and y_dig > 0:
-                    y_dig = y_dig - 1
-                elif random_value > 0.75 and x_dig > 0:
-                    x_dig = x_dig - 1
+        for i in range(0, self.size):
+            random_value = random.random()
+            if random_value < 0.25 and x_dig < self.size - 1:
+                x_dig = x_dig + 1
+            elif random_value >= 0.25 and random_value <= 0.75 and y_dig > 0:
+                y_dig = y_dig - 1
+            elif random_value > 0.75 and x_dig > 0:
+                x_dig = x_dig - 1
+
 
             self.fields[x_dig][y_dig] = 'F'
 
@@ -183,7 +180,7 @@ class GameBoard:
         for row in range(0, self.size):
             for col in range(0, self.size):
                 random_value = random.random()
-                if random_value <= self.probability and not self.inside_queen_chamber(row, col):
+                if random_value <= self.probability and not self.inside_queen_chamber(row, col) and self.fields[row][col] == 'F':
                     self.foods.append(Food(int((1 - random_value) * 50), row, col))
 
     def update_sounds(self):
@@ -225,6 +222,7 @@ class GameBoard:
         return abs((self.size / 2) - x_position) <= 2 and abs((self.size / 2) - y_position) <= 2
 
     def left_reserves(self, food):
+        print("More fooood! " + str(food))
         self.collected_food = food
 
     def use_reserves(self):
@@ -321,8 +319,7 @@ class Game:
         rendered["foods"] = self.board.foods_to_list_around(x_position, y_position)
         rendered["sounds"] = self.board.sounds_to_list_around(x_position, y_position)
         rendered["pheromones"] = self.board.pheromones_to_list_around(x_position, y_position)
-        rendered["x_position"] = x_position
-        rendered["y_position"] = y_position
+        rendered["reserves"] = self.reserves
         if self.board.inside_queen_chamber(x_position, y_position):
             rendered["queen_chamber"] = True
         return json.dumps(rendered)
@@ -395,14 +392,14 @@ def game_loop(game):
             if game.running:
                 game.update_game()
                 print('Game updated! Round ' + str(game.round))
-                time.sleep(5)
+                time.sleep(0.5)
             elif game.finished():
                 print('Game finished! ' + str(game.score))
                 game.reset()
-                time.sleep(5)
+                time.sleep(0.5)
             else:
                 print(game.render_lobby())
-                time.sleep(10)
+                time.sleep(2)
         except KeyboardInterrupt:
             break
 
